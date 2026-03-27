@@ -1,0 +1,9 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  ci:
+    uses: santhsecurity/.github/.github/workflows/rust-ci.yml@main
+    with:
+      workspace: false
+      msrv: "1.75"

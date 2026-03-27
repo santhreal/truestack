@@ -1,0 +1,35 @@
+[package]
+name        = "truestack"
+version     = "0.1.0"
+edition     = "2021"
+authors     = ["Santh <hello@santh.io>"]
+license     = "MIT"
+repository  = "https://github.com/santh-io/truestack"
+homepage    = "https://github.com/santh-io/truestack"
+documentation = "https://docs.rs/truestack"
+description = "Security-aware technology fingerprinting — detects what is really running, not what the version string claims"
+keywords    = ["security", "fingerprint", "wappalyzer", "techstack", "web"]
+categories  = ["web-programming", "network-programming"]
+rust-version = "1.75"
+
+[[bin]]
+name = "truestack"
+path = "src/main.rs"
+
+[dependencies]
+clap        = { version = "4.5", features = ["derive"] }
+serde       = { version = "1", features = ["derive"] }
+serde_yaml  = "0.9"
+once_cell   = "1.19"
+stealthreq  = { path = "../../libs/offensive/stealthreq", optional = true }
+base64      = "0.22"
+scraper     = "0.21"
+tokio       = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[features]
+default  = ["fetch"]
+## Enable async HTTP fetching (requires a runtime).
+fetch    = ["dep:stealthreq"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

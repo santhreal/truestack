@@ -6,7 +6,6 @@
 //! Reference: <https://github.com/pielco11/fav-up>
 
 use base64::{engine::general_purpose::STANDARD, Engine};
-use stealthreq::http as reqwest;
 
 /// Download the favicon from `base_url/favicon.ico` and return its Shodan hash.
 ///

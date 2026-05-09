@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use stealthreq::http as reqwest;
 use truestack::favicon;
 use truestack::fingerprints;
 use truestack::html;

@@ -31,10 +31,11 @@
 //! assert_eq!(techs[0].version.as_deref(), Some("1.21.0"));
 //! ```
 
-/// Local HTTP compatibility shim backed by `stealthreq`.
-pub mod reqwest {
-    pub use stealthreq::http::*;
-}
+/// Re-export the underlying HTTP client so downstream callers do not
+/// need to take a separate `reqwest` dependency. Gated on the `fetch`
+/// feature.
+#[cfg(feature = "fetch")]
+pub use reqwest;
 
 pub mod fingerprints;
 pub mod security_headers;

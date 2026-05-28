@@ -1,5 +1,7 @@
 # truestack
 
+Part of [Santh](https://santh.dev) - open source Rust security and infrastructure tooling. Follow [@SanthProject](https://x.com/SanthProject) on X.
+
 Security-aware technology fingerprinting for web servers.
 
 Unlike traditional fingerprinting tools that report what the version string claims, `truestack` is designed to determine the **true** security posture of a target — including detection of backported patches, behavioural differential probing, and CVE correlation.

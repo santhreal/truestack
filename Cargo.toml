@@ -27,7 +27,7 @@ toml        = { version = "0.8.23" }
 serde_yaml  = { version = "0.9.34" }
 once_cell   = { version = "1.21.4" }
 reqwest     = { version = "0.12.28", features = ["rustls-tls", "json", "stream", "cookies"], optional = true }
-guise = { path = "../../libs/runtime/guise", default-features = false, features = ["http-headers", "reqwest-client"], optional = true }
+guise = { version = "0.1.2", features = ["http-headers", "reqwest-client"], default-features = false, optional = true }
 base64      = { version = "0.22.1", optional = true }
 scraper     = { version = "=0.21.0" }
 secfinding  = { version = "0.4.0" }

@@ -1,5 +1,7 @@
-use truestack::fingerprints::{detect, extract_version};
+use truestack::fingerprints::{detect, extract_version, Rule, RuleEngine, SignalDef};
+use truestack::postprocess::apply;
 use truestack::security_headers::audit;
+use truestack::{TechCategory, Technology};
 
 #[test]
 fn test_empty_inputs() {
@@ -60,20 +62,26 @@ fn test_case_insensitivity_headers() {
 
 #[test]
 fn test_version_extraction_edge_cases() {
-    assert_eq!(extract_version(""), None);
-    assert_eq!(extract_version("nginx/"), None);
-    assert_eq!(extract_version("Apache/"), None);
-    assert_eq!(extract_version("Express"), None);
-    assert_eq!(extract_version("nginx/1.21.0"), Some("1.21.0".to_string()));
+    assert_eq!(extract_version("", ""), None);
+    assert_eq!(extract_version("nginx/", "nginx"), None);
+    assert_eq!(extract_version("Apache/", "apache"), None);
+    assert_eq!(extract_version("Express", "express"), None);
     assert_eq!(
-        extract_version("Microsoft-IIS/10.0"),
+        extract_version("nginx/1.21.0", "nginx"),
+        Some("1.21.0".to_string())
+    );
+    assert_eq!(
+        extract_version("Microsoft-IIS/10.0", "iis"),
         Some("10.0".to_string())
     );
     assert_eq!(
-        extract_version("Server/2.0 (Ubuntu)"),
+        extract_version("Server/2.0 (Ubuntu)", "server"),
         Some("2.0".to_string())
     );
-    assert_eq!(extract_version("  foo / 1.0 "), Some("1.0".to_string()));
+    assert_eq!(
+        extract_version("  foo / 1.0 ", "foo"),
+        Some("1.0".to_string())
+    );
 }
 
 #[test]
@@ -95,14 +103,14 @@ fn test_csp_multiple_headers() {
         ("Content-Security-Policy", "script-src 'unsafe-inline'"),
     ];
     let findings = audit(&headers);
-    assert!(findings.iter().any(|f| f.title.contains("unsafe-inline")));
+    assert!(findings.iter().any(|f| f.title().contains("unsafe-inline")));
 }
 
 #[test]
 fn test_csp_wildcard() {
     let headers = vec![("Content-Security-Policy", "script-src *")];
     let findings = audit(&headers);
-    assert!(findings.iter().any(|f| f.title.contains("wildcard")));
+    assert!(findings.iter().any(|f| f.title().contains("wildcard")));
 }
 
 #[test]
@@ -112,7 +120,7 @@ fn test_csp_bypass_domains() {
         "script-src https://cdn.jsdelivr.net",
     )];
     let findings = audit(&headers);
-    assert!(findings.iter().any(|f| f.title.contains("CSP bypass")));
+    assert!(findings.iter().any(|f| f.title().contains("CSP bypass")));
 }
 
 #[test]
@@ -121,7 +129,7 @@ fn test_csp_missing_base_uri() {
     let findings = audit(&headers);
     assert!(findings
         .iter()
-        .any(|f| f.title.contains("missing base-uri")));
+        .any(|f| f.title().contains("missing base-uri")));
 }
 
 #[test]
@@ -223,7 +231,7 @@ fn test_missing_framework_signals_are_detected() {
 fn test_all_security_headers_missing() {
     let empty: &[(&str, &str)] = &[];
     let findings = audit(empty);
-    let titles: Vec<_> = findings.iter().map(|f| f.title.as_str()).collect();
+    let titles: Vec<_> = findings.iter().map(|f| f.title()).collect();
 
     assert!(titles.contains(&"Missing HSTS header"));
     assert!(titles.contains(&"Missing Content-Security-Policy"));
@@ -242,10 +250,68 @@ fn test_leaky_headers() {
         ("X-AspNetMvc-Version", "5.2"),
     ];
     let findings = audit(&headers);
-    let titles: Vec<_> = findings.iter().map(|f| f.title.as_str()).collect();
+    let titles: Vec<_> = findings.iter().map(|f| f.title()).collect();
 
     assert!(titles.contains(&"X-Powered-By header leaks server technology"));
     assert!(titles.contains(&"Server header leaks version info"));
     assert!(titles.contains(&"X-AspNet-Version leaks framework version"));
     assert!(titles.contains(&"X-AspNetMvc-Version leaks framework version"));
+}
+
+#[test]
+fn test_large_body_does_not_panic() {
+    // 3 MB body containing a framework marker  -  should scan without OOM.
+    let mut body = String::with_capacity(3 * 1024 * 1024);
+    body.push_str("<html><head><title>Big</title></head><body>");
+    for _ in 0..(3 * 1024) {
+        body.push_str(&"a".repeat(1024));
+    }
+    body.push_str("__NEXT_DATA__");
+    body.push_str("</body></html>");
+
+    let empty_headers: &[(&str, &str)] = &[];
+    let techs = detect(empty_headers, &body);
+    assert!(techs.iter().any(|t| t.name == "Next.js"));
+}
+
+#[test]
+fn test_postprocess_dedup_keeps_highest_confidence() {
+    let techs = vec![
+        Technology {
+            name: "nginx".into(),
+            version: None,
+            category: TechCategory::Server,
+            confidence: 60,
+        },
+        Technology {
+            name: "nginx".into(),
+            version: None,
+            category: TechCategory::Server,
+            confidence: 95,
+        },
+    ];
+    let result = apply(techs, &[]);
+    assert_eq!(result.iter().filter(|t| t.name == "nginx").count(), 1);
+    assert_eq!(
+        result
+            .iter()
+            .find(|t| t.name == "nginx")
+            .unwrap()
+            .confidence,
+        95
+    );
+}
+
+#[test]
+fn test_react_server_components_detection() {
+    let body = r#"<html><body><script>__RSC</script></body></html>"#;
+    let techs = detect::<&str, &str>(&[], body);
+    assert!(techs.iter().any(|t| t.name == "React Server Components"));
+}
+
+#[test]
+fn test_turbopack_detection() {
+    let body = r#"<html><body><script>__turbopack_load()</script></body></html>"#;
+    let techs = detect::<&str, &str>(&[], body);
+    assert!(techs.iter().any(|t| t.name == "Turbopack"));
 }

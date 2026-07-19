@@ -1,0 +1,21 @@
+[package]
+name = "truestack-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+repository = "https://github.com/santhsecurity/truestack"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+truestack = { path = ".." }
+
+[[bin]]
+name = "fuzz_rule_engine"
+path = "fuzz_targets/fuzz_rule_engine.rs"
+test = false
+doc = false
+
+[workspace]

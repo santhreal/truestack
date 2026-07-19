@@ -4,7 +4,8 @@
 //! Checks include HSTS, CSP (with deep bypass analysis), X-Frame-Options,
 //! X-Content-Type-Options, Referrer-Policy, and Permissions-Policy.
 
-use crate::{HeaderEvidence, HeaderFinding, Severity};
+use crate::fingerprints::contains_ignore_case;
+use crate::{Finding, SecEvidence, Severity};
 
 /// A check for a missing or misconfigured security header.
 struct HeaderCheck {
@@ -21,42 +22,70 @@ const CHECKS: &[HeaderCheck] = &[
         header: "strict-transport-security",
         missing_severity: Severity::Medium,
         missing_title: "Missing HSTS header",
-        missing_detail: "Strict-Transport-Security not set — browsers may downgrade to HTTP.",
+        missing_detail: "Strict-Transport-Security not set  -  browsers may downgrade to HTTP.",
         must_contain: Some(("max-age", Severity::Low, "HSTS missing max-age directive")),
     },
     HeaderCheck {
         header: "content-security-policy",
         missing_severity: Severity::Medium,
         missing_title: "Missing Content-Security-Policy",
-        missing_detail: "CSP not set — XSS attacks are unmitigated at the browser level.",
+        missing_detail: "CSP not set  -  XSS attacks are unmitigated at the browser level.",
         must_contain: None,
     },
     HeaderCheck {
         header: "x-frame-options",
         missing_severity: Severity::Low,
         missing_title: "Missing X-Frame-Options",
-        missing_detail: "X-Frame-Options not set — clickjacking attacks possible. Use CSP frame-ancestors if CSP is present.",
+        missing_detail: "X-Frame-Options not set  -  clickjacking attacks possible. Use CSP frame-ancestors if CSP is present.",
         must_contain: None,
     },
     HeaderCheck {
         header: "x-content-type-options",
         missing_severity: Severity::Low,
         missing_title: "Missing X-Content-Type-Options",
-        missing_detail: "X-Content-Type-Options: nosniff not set — MIME-sniffing attacks possible.",
+        missing_detail: "X-Content-Type-Options: nosniff not set  -  MIME-sniffing attacks possible.",
         must_contain: Some(("nosniff", Severity::Low, "X-Content-Type-Options value is not 'nosniff'")),
     },
     HeaderCheck {
         header: "referrer-policy",
         missing_severity: Severity::Low,
         missing_title: "Missing Referrer-Policy",
-        missing_detail: "Referrer-Policy not set — full URL may be sent to third parties in Referer header.",
+        missing_detail: "Referrer-Policy not set  -  full URL may be sent to third parties in Referer header.",
         must_contain: None,
     },
     HeaderCheck {
         header: "permissions-policy",
         missing_severity: Severity::Low,
         missing_title: "Missing Permissions-Policy",
-        missing_detail: "Permissions-Policy not set — browser features (camera, microphone, etc.) not explicitly restricted.",
+        missing_detail: "Permissions-Policy not set  -  browser features (camera, microphone, etc.) not explicitly restricted.",
+        must_contain: None,
+    },
+    HeaderCheck {
+        header: "cross-origin-embedder-policy",
+        missing_severity: Severity::Low,
+        missing_title: "Missing Cross-Origin-Embedder-Policy (COEP)",
+        missing_detail: "COEP not set  -  Cross-Origin XS-Leaks and Spectre attacks may be possible.",
+        must_contain: None,
+    },
+    HeaderCheck {
+        header: "cross-origin-opener-policy",
+        missing_severity: Severity::Low,
+        missing_title: "Missing Cross-Origin-Opener-Policy (COOP)",
+        missing_detail: "COOP not set  -  Cross-Origin window reference leaks possible.",
+        must_contain: None,
+    },
+    HeaderCheck {
+        header: "cross-origin-resource-policy",
+        missing_severity: Severity::Low,
+        missing_title: "Missing Cross-Origin-Resource-Policy (CORP)",
+        missing_detail: "CORP not set  -  Unintentional cross-origin resource sharing possible.",
+        must_contain: None,
+    },
+    HeaderCheck {
+        header: "cache-control",
+        missing_severity: Severity::Low,
+        missing_title: "Missing Cache-Control Header",
+        missing_detail: "Cache-Control not set  -  sensitive pages might be cached downstream.",
         must_contain: None,
     },
 ];
@@ -65,28 +94,34 @@ const CHECKS: &[HeaderCheck] = &[
 const CSP_BYPASS_DOMAINS: &[(&str, &str)] = &[
     (
         "cdn.jsdelivr.net",
-        "jsDelivr CDN — JSONP/arbitrary script endpoint",
+        "jsDelivr CDN  -  JSONP/arbitrary script endpoint",
     ),
-    ("unpkg.com", "unpkg CDN — arbitrary npm package hosting"),
-    ("cdnjs.cloudflare.com", "cdnjs — AngularJS JSONP bypass"),
+    ("unpkg.com", "unpkg CDN  -  arbitrary npm package hosting"),
+    ("cdnjs.cloudflare.com", "cdnjs  -  AngularJS JSONP bypass"),
     (
         "ajax.googleapis.com",
-        "Google Ajax CDN — Angular JS CSP bypass",
+        "Google Ajax CDN  -  Angular JS CSP bypass",
     ),
-    ("www.googleapis.com", "Google APIs — OAuth redirect bypass"),
-    ("accounts.google.com", "Google Accounts — OAuth JSONP"),
-    ("apis.google.com", "Google APIs — JSONP bypass"),
-    ("storage.googleapis.com", "GCS — arbitrary file hosting"),
-    ("*.s3.amazonaws.com", "S3 — attacker-writable buckets"),
+    (
+        "www.googleapis.com",
+        "Google APIs  -  OAuth redirect bypass",
+    ),
+    ("accounts.google.com", "Google Accounts  -  OAuth JSONP"),
+    ("apis.google.com", "Google APIs  -  JSONP bypass"),
+    ("storage.googleapis.com", "GCS  -  arbitrary file hosting"),
+    ("*.s3.amazonaws.com", "S3  -  attacker-writable buckets"),
     (
         "*.blob.core.windows.net",
-        "Azure Blob — arbitrary file hosting",
+        "Azure Blob  -  arbitrary file hosting",
     ),
-    ("*.cloudfront.net", "CloudFront — CNAME to attacker bucket"),
-    ("*.github.io", "GitHub Pages — attacker-controlled origin"),
-    ("*.vercel.app", "Vercel — attacker deployable"),
-    ("*.netlify.app", "Netlify — attacker deployable"),
-    ("*.pages.dev", "Cloudflare Pages — attacker deployable"),
+    (
+        "*.cloudfront.net",
+        "CloudFront  -  CNAME to attacker bucket",
+    ),
+    ("*.github.io", "GitHub Pages  -  attacker-controlled origin"),
+    ("*.vercel.app", "Vercel  -  attacker deployable"),
+    ("*.netlify.app", "Netlify  -  attacker deployable"),
+    ("*.pages.dev", "Cloudflare Pages  -  attacker deployable"),
 ];
 
 /// Headers that leak implementation details and should be removed.
@@ -111,13 +146,28 @@ const LEAKY_HEADERS: &[(&str, &str, &str)] = &[
         "X-AspNetMvc-Version leaks framework version",
         "X-AspNetMvc-Version header exposes MVC version. Suppress in Global.asax.",
     ),
+    (
+        "x-generator",
+        "X-Generator leaks framework/CMS version",
+        "X-Generator header exposes CMS version. Suppress to hide stack details.",
+    ),
+    (
+        "via",
+        "Via header exposes proxy chain",
+        "Via header leaks internal proxy chains and names. Mask or remove.",
+    ),
+    (
+        "x-version",
+        "X-Version leaks software version",
+        "X-Version header exposes exact software version to attackers. Remove this header.",
+    ),
 ];
 
 /// Audit HTTP response headers for security misconfigurations.
 ///
-/// Returns a list of [`HeaderFinding`]s describing missing headers,
+/// Returns a list of [`Finding`]s describing missing headers,
 /// CSP bypass opportunities, and information-leaking headers.
-pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<HeaderFinding> {
+pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     // ── Missing / misconfigured security headers ─────────────────────────
@@ -127,28 +177,37 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<HeaderFind
             .find(|(k, _)| k.as_ref().eq_ignore_ascii_case(check.header));
         match found {
             None => {
-                findings.push(HeaderFinding {
-                    title: check.missing_title.to_string(),
-                    detail: check.missing_detail.to_string(),
-                    severity: check.missing_severity,
-                    tags: vec!["headers".into(), "security-headers".into()],
-                    evidence: None,
-                });
+                if let Some(f) = Finding::builder("truestack", "?", check.missing_severity)
+                    .title(check.missing_title)
+                    .detail(check.missing_detail)
+                    .tag("headers")
+                    .tag("security-headers")
+                    .build_or_log()
+                {
+                    findings.push(f);
+                };
             }
             Some((_, val)) => {
                 let val_str = val.as_ref();
                 if let Some((must, sev, title)) = check.must_contain {
-                    if !val_str.to_lowercase().contains(must) {
-                        findings.push(HeaderFinding {
-                            title: title.to_string(),
-                            detail: format!("{} value: '{}'", check.header, val_str),
-                            severity: sev,
-                            tags: vec!["headers".into(), "security-headers".into()],
-                            evidence: Some(HeaderEvidence {
-                                header: Some((check.header.to_string(), val_str.to_string())),
+                    if !contains_ignore_case(val_str, must) {
+                        if let Some(f) = Finding::builder("truestack", "?", sev)
+                            .title(title)
+                            .detail(format!("{} value: '{}'", check.header, val_str))
+                            .tag("headers")
+                            .tag("security-headers")
+                            .evidence(SecEvidence::HttpResponse {
+                                status: 200,
+                                headers: vec![(
+                                    check.header.to_string().into(),
+                                    val_str.to_string().into(),
+                                )],
                                 body_excerpt: None,
-                            }),
-                        });
+                            })
+                            .build_or_log()
+                        {
+                            findings.push(f);
+                        };
                     }
                 }
             }
@@ -162,89 +221,113 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<HeaderFind
 
     for (_, csp_val) in csp_headers {
         let csp_str = csp_val.as_ref();
-        let csp_lower = csp_str.to_lowercase();
-        let csp_evidence = || HeaderEvidence {
-            header: Some((
-                "content-security-policy".into(),
-                csp_str.chars().take(200).collect(),
-            )),
+        let csp_evidence = || SecEvidence::HttpResponse {
+            status: 200,
+            headers: vec![(
+                "Content-Security-Policy".to_string().into(),
+                csp_str.to_string().into(),
+            )],
             body_excerpt: None,
         };
 
         // unsafe-inline in script-src
-        if csp_lower.contains("'unsafe-inline'") && csp_lower.contains("script-src") {
-            findings.push(HeaderFinding {
-                title: "CSP: unsafe-inline in script-src — XSS mitigation defeated".into(),
-                detail: "Content-Security-Policy includes 'unsafe-inline' for scripts. \
+        if contains_ignore_case(csp_str, "'unsafe-inline'")
+            && contains_ignore_case(csp_str, "script-src")
+        {
+            if let Some(f) = Finding::builder("truestack", "?", Severity::Medium)
+                .title("CSP: unsafe-inline in script-src  -  XSS mitigation defeated")
+                .detail(
+                    "Content-Security-Policy includes 'unsafe-inline' for scripts. \
                          Inline script execution is permitted, completely negating CSP's \
-                         primary XSS defence. Remove unsafe-inline and use nonces or hashes."
-                    .into(),
-                severity: Severity::Medium,
-                tags: vec!["headers".into(), "csp".into(), "xss".into()],
-                evidence: Some(csp_evidence()),
-            });
+                         primary XSS defence. Remove unsafe-inline and use nonces or hashes.",
+                )
+                .tag("headers")
+                .tag("csp")
+                .tag("xss")
+                .evidence(csp_evidence())
+                .build_or_log()
+            {
+                findings.push(f);
+            };
         }
 
         // unsafe-eval
-        if csp_lower.contains("'unsafe-eval'") {
-            findings.push(HeaderFinding {
-                title: "CSP: unsafe-eval in script-src".into(),
-                detail: "Content-Security-Policy includes 'unsafe-eval'. \
+        if contains_ignore_case(csp_str, "'unsafe-eval'") {
+            if let Some(f) = Finding::builder("truestack", "?", Severity::Low)
+                .title("CSP: unsafe-eval in script-src")
+                .detail(
+                    "Content-Security-Policy includes 'unsafe-eval'. \
                          eval(), Function(), and setTimeout(string) are permitted, \
-                         widening the XSS attack surface. Remove unsafe-eval."
-                    .into(),
-                severity: Severity::Low,
-                tags: vec!["headers".into(), "csp".into()],
-                evidence: Some(csp_evidence()),
-            });
+                         widening the XSS attack surface. Remove unsafe-eval.",
+                )
+                .tag("headers")
+                .tag("csp")
+                .evidence(csp_evidence())
+                .build_or_log()
+            {
+                findings.push(f);
+            };
         }
 
         // Wildcard in script-src / default-src
-        if csp_lower.contains("script-src *")
-            || csp_lower.contains("script-src '*'")
-            || (csp_lower.contains("default-src *") && !csp_lower.contains("script-src"))
-        {
-            findings.push(HeaderFinding {
-                title: "CSP: wildcard (*) in script-src — policy is trivially bypassable".into(),
-                detail: "A wildcard host source in script-src allows loading scripts from any domain. \
-                         CSP provides no meaningful XSS protection. Restrict to specific trusted origins.".into(),
-                severity: Severity::High,
-                tags: vec!["headers".into(), "csp".into(), "xss".into()],
-                evidence: Some(csp_evidence()),
-            });
+        let has_wildcard = csp_str.split(';').any(|directive| {
+            let parts: Vec<_> = directive.split_whitespace().collect();
+            if parts.is_empty() {
+                return false;
+            }
+            let directive_name = parts[0];
+            let is_script_src = directive_name.eq_ignore_ascii_case("script-src")
+                || (directive_name.eq_ignore_ascii_case("default-src")
+                    && !contains_ignore_case(csp_str, "script-src"));
+            is_script_src && (parts.contains(&"*") || parts.contains(&"'*'"))
+        });
+
+        if has_wildcard {
+            if let Some(f) = Finding::builder("truestack", "?", Severity::High)
+                    .title("CSP: wildcard (*) in script-src  -  policy is trivially bypassable")
+                    .detail(
+                        "A wildcard host source in script-src allows loading scripts from any domain. \
+                         CSP provides no meaningful XSS protection. Restrict to specific trusted origins.",
+                    )
+                    .tag("headers").tag("csp").tag("xss")
+                    .evidence(csp_evidence()).build_or_log() { findings.push(f); };
         }
 
         // Known CSP bypass domains
         for (domain, reason) in CSP_BYPASS_DOMAINS {
             let match_domain = domain.trim_start_matches("*.");
-            if csp_lower.contains(match_domain) {
-                findings.push(HeaderFinding {
-                    title: format!("CSP bypass: {} in script-src", domain),
-                    detail: format!(
-                        "CSP allows scripts from '{}' — {}. \
-                         Attackers can load malicious scripts from this trusted origin \
-                         to bypass CSP-based XSS protections.",
+            if contains_ignore_case(csp_str, match_domain) {
+                if let Some(f) = Finding::builder("truestack", "?", Severity::Medium)
+                    .title(format!("CSP bypass: {} in script-src", domain))
+                    .detail(format!(
+                        "CSP allows scripts from '{}'  -  {}. \
+                             Attackers can load malicious scripts from this trusted origin \
+                             to bypass CSP-based XSS protections.",
                         domain, reason
-                    ),
-                    severity: Severity::Medium,
-                    tags: vec!["headers".into(), "csp".into(), "xss".into()],
-                    evidence: Some(csp_evidence()),
-                });
+                    ))
+                    .tag("headers")
+                    .tag("csp")
+                    .tag("xss")
+                    .evidence(csp_evidence())
+                    .build_or_log()
+                {
+                    findings.push(f);
+                };
                 break; // one bypass domain per CSP is enough
             }
         }
 
         // Missing base-uri
-        if !csp_lower.contains("base-uri") {
-            findings.push(HeaderFinding {
-                title: "CSP: missing base-uri directive".into(),
-                detail: "CSP does not include a base-uri directive. If an attacker can inject a \
-                         <base href> tag, all relative script/link URLs become attacker-controlled — \
-                         bypassing script-src restrictions. Add base-uri 'self'.".into(),
-                severity: Severity::Low,
-                tags: vec!["headers".into(), "csp".into()],
-                evidence: Some(csp_evidence()),
-            });
+        if !contains_ignore_case(csp_str, "base-uri") {
+            if let Some(f) = Finding::builder("truestack", "?", Severity::Low)
+                    .title("CSP: missing base-uri directive")
+                    .detail(
+                        "CSP does not include a base-uri directive. If an attacker can inject a \
+                         <base href> tag, all relative script/link URLs become attacker-controlled  -  \
+                         bypassing script-src restrictions. Add base-uri 'self'.",
+                    )
+                    .tag("headers").tag("csp")
+                    .evidence(csp_evidence()).build_or_log() { findings.push(f); };
         }
     }
 
@@ -256,16 +339,20 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<HeaderFind
         {
             let val_str = val.as_ref();
             if !val_str.trim().is_empty() {
-                findings.push(HeaderFinding {
-                    title: (*title).to_string(),
-                    detail: (*detail).to_string(),
-                    severity: Severity::Info,
-                    tags: vec!["headers".into(), "information-disclosure".into()],
-                    evidence: Some(HeaderEvidence {
-                        header: Some((header.to_string(), val_str.to_string())),
+                if let Some(f) = Finding::builder("truestack", "?", Severity::Info)
+                    .title((*title).to_string())
+                    .detail((*detail).to_string())
+                    .tag("headers")
+                    .tag("information-disclosure")
+                    .evidence(SecEvidence::HttpResponse {
+                        status: 200,
+                        headers: vec![(header.to_string().into(), val_str.to_string().into())],
                         body_excerpt: None,
-                    }),
-                });
+                    })
+                    .build_or_log()
+                {
+                    findings.push(f);
+                };
             }
         }
     }
@@ -282,7 +369,7 @@ mod tests {
         let empty_headers: &[(&str, &str)] = &[];
         let findings = audit(empty_headers);
         assert!(
-            findings.iter().any(|f| f.title.contains("HSTS")),
+            findings.iter().any(|f| f.title().contains("HSTS")),
             "should flag missing HSTS"
         );
     }
@@ -292,7 +379,7 @@ mod tests {
         let headers = vec![("Content-Security-Policy", "script-src 'unsafe-inline'")];
         let findings = audit(&headers);
         assert!(
-            findings.iter().any(|f| f.title.contains("unsafe-inline")),
+            findings.iter().any(|f| f.title().contains("unsafe-inline")),
             "should flag unsafe-inline in CSP"
         );
     }
@@ -302,7 +389,7 @@ mod tests {
         let headers = vec![("Content-Security-Policy", "script-src cdn.jsdelivr.net")];
         let findings = audit(&headers);
         assert!(
-            findings.iter().any(|f| f.title.contains("jsdelivr")),
+            findings.iter().any(|f| f.title().contains("jsdelivr")),
             "should flag jsdelivr as CSP bypass"
         );
     }
@@ -311,7 +398,7 @@ mod tests {
         let headers = vec![("Server", "Apache/2.4.41")];
         let findings = audit(&headers);
         assert!(
-            findings.iter().any(|f| f.title.contains("Server header")),
+            findings.iter().any(|f| f.title().contains("Server header")),
             "should flag leaky Server header"
         );
     }

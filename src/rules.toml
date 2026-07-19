@@ -1,0 +1,1381 @@
+[[rules]]
+name = "nginx"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "nginx" },
+]
+negative_signals = [
+    { type = "header", key = "x-amz-cf-id", value = "" },
+]
+
+[[rules]]
+name = "Banner Spoofing / Honeypot"
+category = "security"
+signals = [
+    { type = "header", key = "server", value = "Microsoft-IIS/10.0" },
+]
+negative_signals = [
+    { type = "header", key = "x-powered-by", value = "PHP" },
+    { type = "header", key = "x-aspnet-version", value = "" },
+]
+
+[[rules]]
+name = "Apache"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "apache" },
+]
+
+[[rules]]
+name = "IIS"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "microsoft-iis" },
+]
+
+[[rules]]
+name = "Caddy"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "caddy" },
+]
+
+[[rules]]
+name = "LiteSpeed"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "litespeed" },
+]
+
+[[rules]]
+name = "Traefik"
+category = "server"
+signals = [
+    { type = "header", key = "x-traefik-router", value = "" },
+    { type = "header", key = "x-traefik-service", value = "" },
+]
+
+[[rules]]
+name = "lighttpd"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "lighttpd" },
+]
+
+[[rules]]
+name = "Cherokee"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "cherokee" },
+]
+
+[[rules]]
+name = "Hiawatha"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "hiawatha" },
+]
+
+[[rules]]
+name = "Tomcat"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "apache-coyote" },
+    { type = "cookie", value = "JSESSIONID" },
+]
+
+[[rules]]
+name = "Jetty"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "jetty" },
+]
+
+[[rules]]
+name = "Gunicorn"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "gunicorn" },
+]
+
+[[rules]]
+name = "uWSGI"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "uwsgi" },
+]
+
+[[rules]]
+name = "Cowboy"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "cowboy" },
+]
+
+[[rules]]
+name = "Tengine"
+version_header = "server"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "tengine" },
+]
+
+[[rules]]
+name = "WordPress"
+category = "cms"
+signals = [
+    # The canonical, version-bearing fingerprint Wappalyzer keys on
+    # first  -  present even when wp-content/wp-includes paths are
+    # CDN-rewritten or the front end is headless. Its absence here
+    # silently missed any such WordPress site.
+    { type = "body", value = "<meta name=\"generator\" content=\"WordPress" },
+    { type = "body", value = "name='generator' content='WordPress" },
+    { type = "body", value = "/wp-content/" },
+    { type = "body", value = "/wp-includes/" },
+    { type = "body", value = "wp-json" },
+    { type = "cookie", value = "wordpress_" },
+    { type = "body", value = "wp-emoji-release" },
+    { type = "header", key = "x-pingback", value = "xmlrpc.php" },
+]
+
+[[rules]]
+name = "Drupal"
+category = "cms"
+signals = [
+    { type = "header", key = "x-generator", value = "drupal" },
+    { type = "header", key = "x-drupal-cache", value = "" },
+    { type = "body", value = "sites/all/themes/" },
+    { type = "body", value = "sites/default/files/" },
+    { type = "cookie", value = "Drupal.visitor" },
+]
+
+[[rules]]
+name = "Joomla"
+category = "cms"
+signals = [
+    { type = "header", key = "x-generator", value = "joomla" },
+    { type = "body", value = "/templates/" },
+    { type = "body", value = "/media/jui/" },
+    { type = "cookie", value = "joomla_remember_me" },
+]
+
+[[rules]]
+name = "Ghost"
+category = "cms"
+signals = [
+    { type = "header", key = "x-generator", value = "ghost" },
+    { type = "body", value = "<meta name=\"generator\" content=\"ghost" },
+    { type = "body", value = "ghost-client" },
+]
+
+[[rules]]
+name = "Strapi"
+category = "cms"
+signals = [
+    { type = "header", key = "x-strapi", value = "" },
+    { type = "header", key = "x-powered-by", value = "strapi" },
+    { type = "body", value = "strapi.io" },
+]
+
+[[rules]]
+name = "Contentful"
+category = "cms"
+signals = [
+    { type = "header", key = "x-contentful-route", value = "" },
+    { type = "body", value = "cdn.contentful.com" },
+    { type = "body", value = "contentful.com" },
+]
+
+[[rules]]
+name = "Squarespace"
+category = "cms"
+signals = [
+    { type = "header", key = "x-squarespace-version", value = "" },
+    { type = "body", value = "static.squarespace.com" },
+    { type = "body", value = "squarespace-cdn" },
+]
+
+[[rules]]
+name = "Wix"
+category = "cms"
+signals = [
+    { type = "header", key = "x-wix-request-id", value = "" },
+    { type = "body", value = "static.wixstatic.com" },
+    { type = "body", value = "wixsite.com" },
+]
+
+[[rules]]
+name = "Weebly"
+category = "cms"
+signals = [
+    { type = "header", key = "x-weebly-version", value = "" },
+    { type = "body", value = "weebly.com" },
+]
+
+[[rules]]
+name = "TYPO3"
+category = "cms"
+signals = [
+    { type = "header", key = "x-generator", value = "typo3" },
+    { type = "body", value = "typo3conf" },
+    { type = "body", value = "typo3temp" },
+]
+
+[[rules]]
+name = "Magento"
+category = "cms"
+signals = [
+    { type = "cookie", value = "mage-" },
+    { type = "body", value = "magento" },
+    { type = "body", value = "Mage.Cookies" },
+]
+
+[[rules]]
+name = "PrestaShop"
+category = "cms"
+signals = [
+    { type = "header", key = "x-powered-by", value = "prestashop" },
+    { type = "body", value = "prestashop" },
+]
+
+[[rules]]
+name = "Webflow"
+category = "cms"
+signals = [
+    { type = "header", key = "x-generator", value = "webflow" },
+    { type = "body", value = "cdn.prod.website-files.com" },
+    { type = "body", value = "data-wf-" },
+]
+
+[[rules]]
+name = "React"
+category = "framework"
+signals = [
+    { type = "body", value = "react-dom" },
+    { type = "body", value = "__react" },
+    { type = "body", value = "data-reactroot" },
+    { type = "body", value = "reactjs" },
+]
+
+[[rules]]
+name = "Vue.js"
+category = "framework"
+signals = [
+    { type = "body", value = "data-v-" },
+    { type = "body", value = "__VUE__" },
+    { type = "body", value = "vue.js" },
+    { type = "body", value = "vue.min.js" },
+]
+
+[[rules]]
+name = "Angular"
+category = "framework"
+signals = [
+    { type = "body", value = "ng-version" },
+    { type = "body", value = "ng-app" },
+    { type = "body", value = "ng-content" },
+    { type = "body", value = "angular.io" },
+]
+
+[[rules]]
+name = "AngularJS"
+category = "framework"
+signals = [
+    { type = "body", value = "angularjs" },
+    { type = "body", value = "ng-controller" },
+    { type = "body", value = "ng-model" },
+    { type = "body", value = "ng-repeat" },
+]
+
+[[rules]]
+name = "Next.js"
+version_header = "x-powered-by"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "next.js" },
+    { type = "body", value = "__NEXT_DATA__" },
+    { type = "body", value = "/_next/static" },
+    { type = "body", value = "__NEXT_LOADED_PAGES__" },
+]
+
+[[rules]]
+name = "Nuxt.js"
+version_header = "x-powered-by"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "nuxt" },
+    { type = "body", value = "__NUXT__" },
+    { type = "body", value = "/_nuxt/" },
+    { type = "body", value = "id=\"__nuxt\"" },
+    { type = "body", value = "__NUXT_DATA__" },
+]
+
+[[rules]]
+name = "Svelte"
+category = "framework"
+signals = [
+    { type = "body", value = "svelte" },
+    { type = "body", value = "__svelte" },
+]
+
+[[rules]]
+name = "SvelteKit"
+category = "framework"
+signals = [
+    { type = "header", key = "x-sveltekit-page", value = "" },
+    { type = "body", value = "sveltekit" },
+    { type = "body", value = "__sveltekit" },
+]
+
+[[rules]]
+name = "Astro"
+category = "framework"
+signals = [
+    { type = "header", key = "x-astro-page", value = "" },
+    { type = "body", value = "astro-" },
+    { type = "body", value = "data-astro-" },
+]
+
+[[rules]]
+name = "Remix"
+category = "framework"
+signals = [
+    { type = "header", key = "x-remix-route", value = "" },
+    { type = "header", key = "x-remix-loader", value = "" },
+    { type = "body", value = "__remixcontext" },
+]
+
+[[rules]]
+name = "Gatsby"
+category = "framework"
+signals = [
+    { type = "header", key = "x-gatsby", value = "" },
+    { type = "body", value = "___gatsby" },
+    { type = "body", value = "/gatsby-" },
+]
+
+[[rules]]
+name = "Hugo"
+category = "framework"
+signals = [
+    { type = "header", key = "x-hugo", value = "" },
+    { type = "body", value = "hugo generator" },
+]
+
+[[rules]]
+name = "jQuery"
+category = "framework"
+signals = [
+    { type = "body", value = "jquery" },
+    { type = "body", value = "jQuery" },
+]
+
+[[rules]]
+name = "Bootstrap"
+category = "framework"
+signals = [
+    { type = "body", value = "bootstrap" },
+    { type = "body", value = "bootstrap.min.css" },
+]
+
+[[rules]]
+name = "Tailwind CSS"
+category = "framework"
+signals = [
+    { type = "body", value = "tailwindcss" },
+    { type = "body", value = "tailwind" },
+]
+
+[[rules]]
+name = "Django"
+category = "framework"
+signals = [
+    { type = "cookie", value = "csrftoken" },
+    { type = "cookie", value = "sessionid" },
+    { type = "cookie", value = "django" },
+    { type = "body", value = "csrfmiddlewaretoken" },
+    { type = "header", key = "set-cookie", value = "django_language" },
+]
+
+[[rules]]
+name = "Flask"
+category = "framework"
+signals = [
+    { type = "header", key = "server", value = "werkzeug" },
+    { type = "cookie", value = "session" },
+]
+
+[[rules]]
+name = "FastAPI"
+category = "framework"
+signals = [
+    { type = "header", key = "server", value = "uvicorn" },
+    { type = "body", value = "fastapi" },
+]
+
+[[rules]]
+name = "Ruby on Rails"
+category = "framework"
+signals = [
+    { type = "cookie", value = "_session_id" },
+    { type = "cookie", value = "_rails_session" },
+    { type = "header", key = "server", value = "mod_rails" },
+    { type = "header", key = "x-powered-by", value = "phusion passenger" },
+    { type = "header", key = "x-runtime", value = "" },
+    { type = "body", value = "csrf-param" },
+    { type = "body", value = "csrf-token" },
+]
+
+[[rules]]
+name = "Laravel"
+category = "framework"
+signals = [
+    { type = "cookie", value = "laravel_session" },
+    { type = "header", key = "x-powered-by", value = "laravel" },
+    { type = "cookie", value = "XSRF-TOKEN" },
+]
+
+[[rules]]
+name = "Spring"
+category = "framework"
+signals = [
+    { type = "header", key = "x-application-context", value = "" },
+    { type = "cookie", value = "JSESSIONID" },
+]
+
+[[rules]]
+name = "Spring Boot"
+category = "framework"
+signals = [
+    { type = "header", key = "x-spring-boot", value = "" },
+    { type = "body", value = "spring-boot" },
+    { type = "body", value = "actuator" },
+]
+
+[[rules]]
+name = "Express"
+version_header = "x-powered-by"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "express" },
+    { type = "cookie", value = "connect.sid" },
+    { type = "cookie", value = "express:sess" },
+]
+
+[[rules]]
+name = "Koa"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "koa" },
+]
+
+[[rules]]
+name = "Fastify"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "fastify" },
+]
+
+[[rules]]
+name = "Hapi"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "hapi" },
+]
+
+[[rules]]
+name = "ASP.NET"
+version_header = "x-aspnet-version"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "asp.net" },
+    { type = "header", key = "x-aspnet-version", value = "" },
+    { type = "cookie", value = "ASP.NET_SessionId" },
+]
+
+[[rules]]
+name = "ASP.NET Core"
+category = "framework"
+signals = [
+    { type = "header", key = "server", value = "kestrel" },
+    { type = "header", key = "x-powered-by", value = "asp.net core" },
+]
+
+[[rules]]
+name = "CodeIgniter"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "codeigniter" },
+    { type = "cookie", value = "ci_session" },
+]
+
+[[rules]]
+name = "Symfony"
+category = "framework"
+signals = [
+    { type = "cookie", value = "symfony" },
+    { type = "body", value = "symfony" },
+]
+
+[[rules]]
+name = "Phoenix"
+category = "framework"
+signals = [
+    { type = "cookie", value = "_phoenix_session" },
+    { type = "header", key = "x-phoenix", value = "" },
+]
+
+[[rules]]
+name = "Play Framework"
+category = "framework"
+signals = [
+    { type = "header", key = "x-play-version", value = "" },
+    { type = "cookie", value = "PLAY_SESSION" },
+]
+
+[[rules]]
+name = "Sinatra"
+category = "framework"
+signals = [
+    { type = "header", key = "x-powered-by", value = "sinatra" },
+]
+
+[[rules]]
+name = "Cloudflare"
+category = "cdn"
+signals = [
+    { type = "header", key = "server", value = "cloudflare" },
+    { type = "header", key = "cf-ray", value = "" },
+    { type = "header", key = "cf-cache-status", value = "" },
+]
+
+[[rules]]
+name = "Akamai"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-akamai-transformed", value = "" },
+    { type = "header", key = "akamai-x-cache-on", value = "" },
+    { type = "header", key = "x-cache", value = "akamai" },
+]
+
+[[rules]]
+name = "Fastly"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-served-by", value = "cache" },
+    { type = "header", key = "fastly-restarts", value = "" },
+    { type = "header", key = "x-fastly-request-id", value = "" },
+]
+
+[[rules]]
+name = "AWS CloudFront"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-amz-cf-id", value = "" },
+    { type = "header", key = "x-amz-cf-pop", value = "" },
+    { type = "header", key = "via", value = "cloudfront" },
+]
+
+[[rules]]
+name = "Vercel"
+category = "cdn"
+signals = [
+    { type = "header", key = "server", value = "vercel" },
+    { type = "header", key = "x-vercel-id", value = "" },
+    { type = "header", key = "x-vercel-cache", value = "" },
+]
+
+[[rules]]
+name = "Netlify"
+category = "cdn"
+signals = [
+    { type = "header", key = "server", value = "netlify" },
+    { type = "header", key = "x-nf-request-id", value = "" },
+    { type = "header", key = "x-netlify-cache", value = "" },
+]
+
+[[rules]]
+name = "Google Cloud CDN"
+category = "cdn"
+signals = [
+    { type = "header", key = "via", value = "google" },
+    { type = "header", key = "x-goog-generation", value = "" },
+]
+
+[[rules]]
+name = "KeyCDN"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-keycdn", value = "" },
+    { type = "header", key = "x-edge-location", value = "keycdn" },
+]
+
+[[rules]]
+name = "BunnyCDN"
+category = "cdn"
+signals = [
+    { type = "header", key = "cdn-geo", value = "bunny" },
+    { type = "header", key = "bunnycdn", value = "" },
+]
+
+[[rules]]
+name = "StackPath"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-stackpath-request-id", value = "" },
+    { type = "header", key = "x-stackpath-edge", value = "" },
+]
+
+[[rules]]
+name = "Sucuri"
+category = "cdn"
+signals = [
+    { type = "header", key = "x-sucuri-id", value = "" },
+    { type = "header", key = "x-sucuri-cache", value = "" },
+]
+
+[[rules]]
+name = "Cloudflare WAF"
+category = "security"
+signals = [
+    { type = "header", key = "cf-ray", value = "" },
+    { type = "header", key = "server", value = "cloudflare" },
+    { type = "body", value = "cloudflare ray id" },
+]
+
+[[rules]]
+name = "AWS WAF"
+category = "security"
+signals = [
+    { type = "header", key = "x-amzn-requestid", value = "" },
+    { type = "header", key = "x-amzn-errortype", value = "" },
+]
+
+[[rules]]
+name = "ModSecurity"
+category = "security"
+signals = [
+    { type = "header", key = "mod_security", value = "" },
+    { type = "header", key = "modsecurity", value = "" },
+]
+
+[[rules]]
+name = "F5 BIG-IP"
+category = "security"
+signals = [
+    { type = "header", key = "x-wa-info", value = "" },
+    { type = "header", key = "x-cnection", value = "" },
+    { type = "cookie", value = "BIGipServer" },
+    { type = "cookie", value = "TS" },
+]
+
+[[rules]]
+name = "Imperva (Incapsula)"
+category = "security"
+signals = [
+    { type = "header", key = "x-iinfo", value = "" },
+    { type = "header", key = "x-cdn", value = "incapsula" },
+    { type = "cookie", value = "visid_incap_" },
+    { type = "cookie", value = "incap_ses_" },
+]
+
+[[rules]]
+name = "Sucuri Firewall"
+category = "security"
+signals = [
+    { type = "header", key = "x-sucuri-id", value = "" },
+    { type = "cookie", value = "sucuri_" },
+]
+
+[[rules]]
+name = "reCAPTCHA"
+category = "security"
+signals = [
+    { type = "body", value = "google.com/recaptcha" },
+    { type = "body", value = "grecaptcha" },
+    { type = "body", value = "recaptcha/api" },
+]
+
+[[rules]]
+name = "hCaptcha"
+category = "security"
+signals = [
+    { type = "body", value = "hcaptcha.com" },
+    { type = "body", value = "hcaptcha" },
+    { type = "body", value = "data-hcaptcha" },
+]
+
+[[rules]]
+name = "Cloudflare Turnstile"
+category = "security"
+signals = [
+    { type = "body", value = "challenges.cloudflare.com" },
+    { type = "body", value = "cf-turnstile" },
+    { type = "body", value = "data-sitekey" },
+]
+
+[[rules]]
+name = "Datadome"
+category = "security"
+signals = [
+    { type = "header", key = "x-datadome", value = "" },
+    { type = "cookie", value = "datadome" },
+    { type = "body", value = "datadome" },
+]
+
+[[rules]]
+name = "PerimeterX"
+category = "security"
+signals = [
+    { type = "header", key = "x-px", value = "" },
+    { type = "cookie", value = "_px" },
+    { type = "body", value = "perimeterx" },
+]
+
+[[rules]]
+name = "Akamai Bot Manager"
+category = "security"
+signals = [
+    { type = "header", key = "x-akamai-bot", value = "" },
+    { type = "cookie", value = "ak_bmsc" },
+]
+
+[[rules]]
+name = "Shape Security"
+category = "security"
+signals = [
+    { type = "header", key = "x-shape-user", value = "" },
+    { type = "cookie", value = "shape" },
+]
+
+[[rules]]
+name = "Arkose Labs"
+category = "security"
+signals = [
+    { type = "body", value = "arkoselabs.com" },
+    { type = "body", value = "arkose" },
+    { type = "body", value = "funcaptcha" },
+]
+
+[[rules]]
+name = "Securiti"
+category = "security"
+signals = [
+    { type = "body", value = "securiti" },
+    { type = "body", value = "consent-manager" },
+]
+
+[[rules]]
+name = "OneTrust"
+category = "security"
+signals = [
+    { type = "body", value = "onetrust" },
+    { type = "body", value = "onetrust-consent-sdk" },
+    { type = "cookie", value = "OptanonConsent" },
+]
+
+[[rules]]
+name = "Cookiebot"
+category = "security"
+signals = [
+    { type = "body", value = "cookiebot" },
+    { type = "body", value = "cookieconsent" },
+    { type = "cookie", value = "CookieConsent" },
+]
+
+[[rules]]
+name = "Google Analytics"
+category = "analytics"
+signals = [
+    { type = "body", value = "google-analytics.com" },
+    { type = "body", value = "googletagmanager.com" },
+    { type = "body", value = "gtag" },
+    { type = "body", value = "ga('create'" },
+    { type = "body", value = "gtm.js" },
+]
+
+[[rules]]
+name = "Google Tag Manager"
+category = "analytics"
+signals = [
+    { type = "body", value = "googletagmanager.com/gtm" },
+    { type = "body", value = "GTM-" },
+    { type = "body", value = "dataLayer" },
+]
+
+[[rules]]
+name = "Hotjar"
+category = "analytics"
+signals = [
+    { type = "body", value = "hotjar.com" },
+    { type = "body", value = "hjid" },
+    { type = "body", value = "hotjar" },
+    { type = "cookie", value = "_hj" },
+]
+
+[[rules]]
+name = "Mixpanel"
+category = "analytics"
+signals = [
+    { type = "body", value = "mixpanel.com" },
+    { type = "body", value = "mixpanel.track" },
+    { type = "body", value = "mixpanel-js" },
+]
+
+[[rules]]
+name = "Amplitude"
+category = "analytics"
+signals = [
+    { type = "body", value = "amplitude.com" },
+    { type = "body", value = "amplitude.getInstance" },
+    { type = "cookie", value = "amplitude_id" },
+]
+
+[[rules]]
+name = "Segment"
+category = "analytics"
+signals = [
+    { type = "body", value = "segment.io" },
+    { type = "body", value = "analytics.js" },
+    { type = "body", value = "segment.com" },
+]
+
+[[rules]]
+name = "Plausible"
+category = "analytics"
+signals = [
+    { type = "body", value = "plausible.io" },
+    { type = "body", value = "data-domain" },
+]
+
+[[rules]]
+name = "Matomo (Piwik)"
+category = "analytics"
+signals = [
+    { type = "body", value = "matomo" },
+    { type = "body", value = "piwik" },
+    { type = "cookie", value = "_pk_id" },
+    { type = "cookie", value = "_pk_ses" },
+]
+
+[[rules]]
+name = "Adobe Analytics"
+category = "analytics"
+signals = [
+    { type = "body", value = "omniture" },
+    { type = "body", value = "adobe-analytics" },
+    { type = "cookie", value = "s_cc" },
+    { type = "cookie", value = "s_sq" },
+]
+
+[[rules]]
+name = "New Relic"
+category = "analytics"
+signals = [
+    { type = "body", value = "newrelic" },
+    { type = "header", key = "x-newrelic-app", value = "" },
+]
+
+[[rules]]
+name = "Sentry"
+category = "analytics"
+signals = [
+    { type = "body", value = "sentry.io" },
+    { type = "body", value = "sentry-cdn" },
+    { type = "body", value = "Sentry.init" },
+]
+
+[[rules]]
+name = "FullStory"
+category = "analytics"
+signals = [
+    { type = "body", value = "fullstory.com" },
+    { type = "body", value = "FS.identify" },
+    { type = "cookie", value = "fs_uid" },
+]
+
+[[rules]]
+name = "Crazy Egg"
+category = "analytics"
+signals = [
+    { type = "body", value = "crazyegg.com" },
+    { type = "body", value = "cetrk" },
+]
+
+[[rules]]
+name = "StatCounter"
+category = "analytics"
+signals = [
+    { type = "body", value = "statcounter.com" },
+    { type = "cookie", value = "sc_is_visitor_unique" },
+]
+
+[[rules]]
+name = "Shopify"
+category = "cms"
+signals = [
+    { type = "header", key = "x-shopify-stage", value = "" },
+    { type = "header", key = "x-shopid", value = "" },
+    { type = "body", value = "cdn.shopify.com" },
+    { type = "body", value = "shopify.com" },
+    { type = "cookie", value = "_shopify_" },
+]
+
+[[rules]]
+name = "WooCommerce"
+category = "cms"
+signals = [
+    { type = "body", value = "woocommerce" },
+    { type = "body", value = "wc-ajax" },
+    { type = "body", value = "wc_fragments" },
+    { type = "cookie", value = "woocommerce_" },
+]
+
+[[rules]]
+name = "BigCommerce"
+category = "cms"
+signals = [
+    { type = "header", key = "x-bc-store-id", value = "" },
+    { type = "body", value = "cdn11.bigcommerce.com" },
+    { type = "body", value = "bigcommerce.com" },
+]
+
+[[rules]]
+name = "Adobe Commerce (Magento 2)"
+category = "cms"
+signals = [
+    { type = "header", key = "x-magento", value = "" },
+    { type = "body", value = "magento.store" },
+]
+
+[[rules]]
+name = "Salesforce Commerce Cloud"
+category = "cms"
+signals = [
+    { type = "header", key = "x-dw-request-id", value = "" },
+    { type = "body", value = "demandware" },
+    { type = "body", value = "salesforce-commerce" },
+]
+
+[[rules]]
+name = "Ecwid"
+category = "cms"
+signals = [
+    { type = "body", value = "ecwid.com" },
+    { type = "body", value = "ecwid_widgets" },
+]
+
+[[rules]]
+name = "Snipcart"
+category = "cms"
+signals = [
+    { type = "body", value = "snipcart.com" },
+    { type = "body", value = "data-api-key" },
+]
+
+[[rules]]
+name = "Stripe"
+category = "cms"
+signals = [
+    { type = "body", value = "stripe.com" },
+    { type = "body", value = "stripe.js" },
+    { type = "body", value = "Stripe.setPublishableKey" },
+]
+
+[[rules]]
+name = "PayPal"
+category = "cms"
+signals = [
+    { type = "body", value = "paypal.com" },
+    { type = "body", value = "paypalobjects.com" },
+]
+
+[[rules]]
+name = "OpenCart"
+category = "cms"
+signals = [
+    { type = "body", value = "opencart" },
+    { type = "cookie", value = "OCSESSID" },
+]
+
+[[rules]]
+name = "osCommerce"
+category = "cms"
+signals = [
+    { type = "body", value = "oscommerce" },
+    { type = "cookie", value = "osCsid" },
+]
+
+[[rules]]
+name = "PHP"
+version_header = "x-powered-by"
+category = "language"
+signals = [
+    { type = "header", key = "x-powered-by", value = "php" },
+    { type = "cookie", value = "PHPSESSID" },
+]
+
+[[rules]]
+name = "Python"
+category = "language"
+signals = [
+    { type = "header", key = "server", value = "python" },
+    { type = "header", key = "x-powered-by", value = "python" },
+]
+
+[[rules]]
+name = "Node.js"
+category = "language"
+signals = [
+    { type = "header", key = "x-powered-by", value = "node.js" },
+]
+
+[[rules]]
+name = "Perl"
+category = "language"
+signals = [
+    { type = "header", key = "server", value = "mod_perl" },
+]
+
+[[rules]]
+name = "Ruby"
+category = "language"
+signals = [
+    { type = "header", key = "server", value = "mod_ruby" },
+    { type = "header", key = "x-powered-by", value = "ruby" },
+]
+
+[[rules]]
+name = "MongoDB"
+category = "database"
+signals = [
+    { type = "header", key = "x-mongodb", value = "" },
+]
+
+[[rules]]
+name = "Elasticsearch"
+category = "database"
+signals = [
+    { type = "header", key = "x-elastic-product", value = "" },
+    { type = "body", value = "elasticsearch" },
+]
+
+[[rules]]
+name = "Ubuntu"
+category = "os"
+signals = [
+    { type = "header", key = "server", value = "ubuntu" },
+]
+
+[[rules]]
+name = "CentOS"
+category = "os"
+signals = [
+    { type = "header", key = "server", value = "centos" },
+]
+
+[[rules]]
+name = "Debian"
+category = "os"
+signals = [
+    { type = "header", key = "server", value = "debian" },
+]
+
+[[rules]]
+name = "Windows Server"
+category = "os"
+signals = [
+    { type = "header", key = "server", value = "win32" },
+    { type = "header", key = "server", value = "win64" },
+]
+
+[[rules]]
+name = "Webpack"
+category = "other"
+signals = [
+    { type = "body", value = "webpack" },
+    { type = "body", value = "__webpack_require__" },
+]
+
+[[rules]]
+name = "Vite"
+category = "other"
+signals = [
+    { type = "body", value = "vite" },
+    { type = "header", key = "x-vite", value = "" },
+]
+
+[[rules]]
+name = "Parcel"
+category = "other"
+signals = [
+    { type = "body", value = "parcelRequire" },
+]
+
+[[rules]]
+name = "Babel"
+category = "other"
+signals = [
+    { type = "body", value = "babel" },
+]
+
+[[rules]]
+name = "GraphQL"
+category = "other"
+signals = [
+    { type = "body", value = "graphql" },
+    { type = "header", key = "x-graphql-cost", value = "" },
+]
+
+[[rules]]
+name = "Swagger"
+category = "other"
+signals = [
+    { type = "body", value = "swagger-ui" },
+    { type = "body", value = "swagger.json" },
+]
+
+[[rules]]
+name = "Postman"
+category = "other"
+signals = [
+    { type = "body", value = "postman" },
+    { type = "header", key = "postman-token", value = "" },
+]
+
+[[rules]]
+name = "Prometheus"
+category = "other"
+signals = [
+    { type = "body", value = "prometheus" },
+    { type = "header", key = "x-prometheus", value = "" },
+]
+
+[[rules]]
+name = "Grafana"
+category = "other"
+signals = [
+    { type = "body", value = "grafana" },
+    { type = "cookie", value = "grafana_sess" },
+]
+
+[[rules]]
+name = "Kubernetes"
+category = "other"
+signals = [
+    { type = "header", key = "x-kubernetes", value = "" },
+]
+
+[[rules]]
+name = "Docker"
+category = "other"
+signals = [
+    { type = "header", key = "x-docker", value = "" },
+]
+
+[[rules]]
+name = "JSON-LD"
+category = "other"
+signals = [
+    { type = "body", value = "application/ld+json" },
+]
+
+[[rules]]
+name = "AWS ALB"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "awselb/2.0" },
+]
+
+[[rules]]
+name = "GitHub Pages"
+category = "cdn"
+signals = [
+    { type = "header", key = "server", value = "github.com" },
+    { type = "header", key = "x-github-request-id", value = "" },
+]
+
+[[rules]]
+name = "Nginx Proxy Manager"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "nginx-proxy-manager" },
+]
+
+[[rules]]
+name = "AWS ALB/CloudFront"
+category = "cdn"
+signals = [
+    { type = "header", key = "server", value = "awselb/2.0" },
+    { type = "header", key = "x-amz-cf-id", value = "" },
+]
+
+[[rules]]
+name = "Apache Tomcat"
+category = "server"
+signals = [
+    { type = "header", key = "x-powered-by", value = "Servlet" },
+    { type = "cookie", value = "JSESSIONID" },
+]
+
+[[rules]]
+name = "OpenResty"
+category = "server"
+signals = [
+    { type = "header", key = "server", value = "openresty" },
+]
+
+[[rules]]
+name = "HAProxy"
+category = "server"
+signals = [
+    { type = "header", key = "via", value = "1.1 haproxy" },
+]
+
+[[rules]]
+name = "SolidJS"
+category = "framework"
+signals = [
+    { type = "body", value = "data-hk" },
+]
+
+[[rules]]
+name = "Alpine.js"
+category = "framework"
+signals = [
+    { type = "body", value = "x-data" },
+    { type = "body", value = " Alpine." },
+]
+
+[[rules]]
+name = "HTMX"
+category = "framework"
+signals = [
+    { type = "body", value = "hx-" },
+    { type = "body", value = "htmx.org" },
+]
+
+[[rules]]
+name = "Preact"
+category = "framework"
+signals = [
+    { type = "body", value = "__PREACT__" },
+]
+
+[[rules]]
+name = "PostgreSQL"
+category = "database"
+signals = [
+    { type = "body", value = "pg_" },
+]
+
+[[rules]]
+name = "MySQL"
+category = "database"
+signals = [
+    { type = "body", value = "mysql_" },
+]
+
+[[rules]]
+name = "Redis"
+category = "database"
+signals = [
+    { type = "header", key = "X-Redis-", value = "" },
+]
+
+[[rules]]
+name = "Imperva/Incapsula"
+category = "security"
+signals = [
+    { type = "header", key = "x-iinfo", value = "" },
+    { type = "cookie", value = "visid_incap_" },
+]
+
+[[rules]]
+name = "Jira"
+category = "cms"
+signals = [
+    { type = "favicon", hash = 96311124 },
+]
+
+[[rules]]
+name = "Confluence"
+category = "cms"
+signals = [
+    { type = "favicon", hash = -305152397 },
+]
+
+[[rules]]
+name = "Jenkins"
+category = "framework"
+signals = [
+    { type = "favicon", hash = 1121142501 },
+]
+
+[[rules]]
+name = "React Server Components"
+category = "framework"
+signals = [
+    { type = "body", value = "__RSC" },
+    { type = "body", value = "react-server" },
+    { type = "header", key = "x-rsc", value = "" },
+]
+
+[[rules]]
+name = "Turbopack"
+category = "framework"
+signals = [
+    { type = "body", value = "__turbopack_load" },
+    { type = "body", value = "turbopack" },
+    { type = "header", key = "x-turbopack", value = "" },
+]
+
+[[rules]]
+name = "Django Error Page"
+category = "framework"
+signals = [
+    { type = "body", value = "<div id=\"summary\">" },
+    { type = "body", value = "Django powered" },
+]
+
+[[rules]]
+name = "ASP.NET Error Page"
+category = "framework"
+signals = [
+    { type = "body", value = "ASP.NET detected" },
+    { type = "body", value = "Server Error in" },
+]
+
+[[rules]]
+name = "Spring Whitelabel"
+category = "framework"
+signals = [
+    { type = "body", value = "Whitelabel Error Page" },
+]
+
+[[rules]]
+name = "Laravel Debug Page"
+category = "framework"
+signals = [
+    { type = "body", value = "vendor/laravel" },
+    { type = "body", value = "Illuminate\\Foundation" },
+]
+
+[[rules]]
+name = "X-Backend Leak"
+category = "security"
+signals = [
+    { type = "header", key = "x-backend", value = "" },
+    { type = "header", key = "x-backend-server", value = "" },
+]

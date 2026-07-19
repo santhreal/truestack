@@ -1,4 +1,4 @@
-//! Favicon hash computation — Shodan-compatible MurmurHash3 x86/32.
+//! Favicon hash computation  -  Shodan-compatible MurmurHash3 x86/32.
 //!
 //! Shodan indexes the hash of `base64(favicon_bytes)` using MurmurHash3.
 //! Use the emitted hash to pivot on Shodan: `http.favicon.hash:{value}`.
@@ -7,21 +7,52 @@
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 
+/// Default maximum favicon size to download (5 MB).
+pub const DEFAULT_FAVICON_LIMIT: usize = 5 * 1024 * 1024;
+
 /// Download the favicon from `base_url/favicon.ico` and return its Shodan hash.
 ///
 /// Returns `None` on any error (missing favicon, connection failure, etc.).
+/// Uses a 5 MB size cap to prevent unbounded memory consumption.
 #[cfg(feature = "fetch")]
 pub async fn fetch_hash(client: &reqwest::Client, base_url: &str) -> Option<i32> {
+    fetch_hash_limited(client, base_url, DEFAULT_FAVICON_LIMIT).await
+}
+
+/// Download the favicon with a custom byte limit.
+#[cfg(feature = "fetch")]
+pub async fn fetch_hash_limited(
+    client: &reqwest::Client,
+    base_url: &str,
+    max_bytes: usize,
+) -> Option<i32> {
     let favicon_url = format!("{}/favicon.ico", base_url.trim_end_matches('/'));
     let resp = client.get(&favicon_url).send().await.ok()?;
     if !resp.status().is_success() {
         return None;
     }
-    let bytes = resp.bytes().await.ok()?;
+    let bytes = limited_bytes(resp, max_bytes).await.ok()?;
     if bytes.is_empty() {
         return None;
     }
     Some(shodan_favicon_hash(&bytes))
+}
+
+/// Read up to `max_bytes` from a response body.
+#[cfg(feature = "fetch")]
+async fn limited_bytes(resp: reqwest::Response, max_bytes: usize) -> anyhow::Result<Vec<u8>> {
+    let mut buf = Vec::with_capacity(max_bytes.min(4096));
+    let mut stream = resp.bytes_stream();
+    while let Some(chunk) = futures_util::StreamExt::next(&mut stream).await {
+        let chunk: bytes::Bytes = chunk?;
+        let remaining = max_bytes.saturating_sub(buf.len());
+        if remaining == 0 {
+            break;
+        }
+        let take = chunk.len().min(remaining);
+        buf.extend_from_slice(&chunk[..take]);
+    }
+    Ok(buf)
 }
 
 /// Compute Shodan's favicon hash.
@@ -40,14 +71,14 @@ fn shodan_base64_with_newlines(data: &[u8]) -> String {
 
     let mut formatted = String::with_capacity(b64.len() + (b64.len() / 76) + 1);
     for chunk in b64.as_bytes().chunks(76) {
-        // Base64 output is ASCII by construction.
-        formatted.push_str(std::str::from_utf8(chunk).unwrap_or_default());
+        // Base64 output is ASCII by construction  -  unwrap is safe here.
+        formatted.push_str(std::str::from_utf8(chunk).unwrap_or(""));
         formatted.push('\n');
     }
     formatted
 }
 
-/// MurmurHash3 x86/32 — minimal faithful implementation, seed configurable.
+/// MurmurHash3 x86/32  -  minimal faithful implementation, seed configurable.
 fn murmurhash3_x86_32(data: &[u8], seed: u32) -> u32 {
     const C1: u32 = 0xcc9e_2d51;
     const C2: u32 = 0x1b87_3593;
@@ -112,5 +143,23 @@ mod tests {
         assert_eq!(shodan_base64_with_newlines(b""), "\n");
         assert_eq!(shodan_base64_with_newlines(b"hello"), "aGVsbG8=\n");
         assert!(shodan_base64_with_newlines(&[b'a'; 80]).ends_with('\n'));
+    }
+
+    #[cfg(feature = "fetch")]
+    #[tokio::test]
+    async fn murmurhash_wikipedia_favicon_integration() {
+        // Known Shodan hash for Wikipedia's favicon is 857403617
+        let client = reqwest::Client::new();
+        let resp = client
+            .get("https://en.wikipedia.org/static/favicon/wikipedia.ico")
+            .send()
+            .await
+            .expect("failed to fetch favicon");
+        if resp.status().is_success() {
+            let bytes = limited_bytes(resp, DEFAULT_FAVICON_LIMIT)
+                .await
+                .expect("failed to read bytes");
+            assert_eq!(shodan_favicon_hash(&bytes), 857_403_617);
+        }
     }
 }

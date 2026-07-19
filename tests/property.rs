@@ -226,10 +226,10 @@ proptest! {
 
         let rules: Vec<Rule> = (0..n)
             .map(|i| Rule {
-                name: format!("Tech{}", i),
+                name: format!("Tech{i}"),
                 version_header: None,
                 category: TechCategory::Other,
-                signals: vec![SignalDef::Body { value: format!("marker{}", i) }],
+                signals: vec![SignalDef::Body { value: format!("marker{i}") }],
                 negative_signals: vec![],
                 excludes: vec![],
                 requires: vec![],

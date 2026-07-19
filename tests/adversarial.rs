@@ -202,8 +202,7 @@ fn test_all_fingerprints() {
         let techs = detect(&headers, body);
         assert!(
             techs.iter().any(|t| t.name == expected),
-            "Failed to detect {}",
-            expected
+            "Failed to detect {expected}"
         );
     }
 }

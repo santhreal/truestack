@@ -2,7 +2,7 @@
 name = "truestack"
 version = "0.2.0"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.88"
 authors = ["Santh Project <contact@santh.dev>"]
 license = "MIT"
 homepage = "https://santh.dev"

@@ -20,23 +20,23 @@ name = "truestack"
 path = "src/main.rs"
 
 [dependencies]
-clap        = { workspace = true, features = ["derive"] }
-serde       = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true }
-toml        = { workspace = true }
-serde_yaml  = { workspace = true }
-once_cell   = { workspace = true }
-reqwest     = { workspace = true, features = ["rustls-tls", "json", "stream", "cookies"], optional = true }
-guise = { default-features = false, features = ["http-headers", "reqwest-client"], optional = true }
-base64      = { workspace = true, optional = true }
+clap        = { version = "4.6.0", features = ["derive"] }
+serde       = { version = "1.0.228", features = ["derive"] }
+serde_json  = { version = "1.0.149" }
+toml        = { version = "0.8.23" }
+serde_yaml  = { version = "0.9.34" }
+once_cell   = { version = "1.21.4" }
+reqwest     = { version = "0.12.28", features = ["rustls-tls", "json", "stream", "cookies"], optional = true }
+guise = { path = "../../libs/runtime/guise", default-features = false, features = ["http-headers", "reqwest-client"], optional = true }
+base64      = { version = "0.22.1", optional = true }
 scraper     = { version = "=0.21.0" }
 secfinding  = { version = "0.4.0" }
-tokio       = { workspace = true, features = ["macros", "rt-multi-thread"] }
-anyhow      = { workspace = true }
-futures-util = { workspace = true }
+tokio       = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow      = { version = "1" }
+futures-util = { version = "=0.3.32" }
 wafrift-detect = "=0.2.15"
-bytes       = { workspace = true }
-aho-corasick = { workspace = true }
+bytes       = { version = "1.11.1" }
+aho-corasick = { version = "1.1.4" }
 
 [features]
 default  = ["fetch"]
@@ -45,9 +45,9 @@ fetch    = ["dep:reqwest", "dep:base64", "dep:guise"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
-wiremock = { workspace = true }
-criterion = { workspace = true, features = ["async_tokio"] }
-proptest = { workspace = true }
+wiremock = { version = "=0.6.5" }
+criterion = { version = "0.5.1", features = ["async_tokio"] }
+proptest = { version = "1.9.0" }
 serde_json = { workspace = true }
 
 [[bench]]

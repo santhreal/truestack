@@ -95,9 +95,7 @@ async fn main() -> Result<()> {
             Ok(custom) => engine.merge(custom),
             Err(e) => writeln!(
                 std::io::stderr().lock(),
-                "Warning: failed to load custom rules from {}: {}",
-                dir,
-                e
+                "Warning: failed to load custom rules from {dir}: {e}",
             )?,
         }
     }
@@ -167,7 +165,7 @@ async fn main() -> Result<()> {
             }
 
             if let Some(hash) = report.favicon_hash {
-                writeln!(std::io::stdout().lock(), "\nFavicon Hash: {}", hash)?;
+                writeln!(std::io::stdout().lock(), "\nFavicon Hash: {hash}")?;
             }
         }
     }

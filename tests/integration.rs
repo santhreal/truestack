@@ -1,3 +1,4 @@
+#![cfg(feature = "fetch")]
 use truestack::{fingerprints, security_headers, Severity};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};

@@ -75,11 +75,13 @@
 //!   HTTP requests the caller explicitly initiates.
 
 /// Local HTTP compatibility shim backed by reqwest..
+#[cfg(feature = "fetch")]
 pub mod reqwest {
     pub use reqwest::*;
 }
 
 pub mod behavior;
+#[cfg(feature = "fetch")]
 pub mod favicon;
 pub mod fingerprints;
 pub mod html;

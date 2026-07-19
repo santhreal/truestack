@@ -11,6 +11,7 @@
 //! 4. Invalid Content-Length → error handling reveals framework
 //! 5. HTTP/0.9 request → only some servers support it
 
+#[cfg(feature = "fetch")]
 use crate::{TechCategory, Technology};
 
 /// Maximum length of the `base_url` accepted by [`probes`].
@@ -51,6 +52,7 @@ pub struct ProbeResult {
 
 /// Known behavioral signatures.
 /// (`probe_name`, `status_code`, `body_contains`, `content_type_contains`) → server
+#[cfg(feature = "fetch")]
 const SIGNATURES: &[(&str, u16, &str, &str, &str)] = &[
     // nginx returns 405 for invalid methods with "Not Allowed" in a minimal HTML page
     ("invalid_method", 405, "<center>nginx", "", "nginx"),
@@ -86,6 +88,7 @@ const SIGNATURES: &[(&str, u16, &str, &str, &str)] = &[
 
 /// Execute behavioral probes against `base_url` and append any identified
 /// server technology to `technologies`.
+#[cfg(feature = "fetch")]
 pub async fn identify(
     client: &reqwest::Client,
     base_url: &str,
@@ -137,6 +140,7 @@ pub async fn identify(
 }
 
 /// Analyze behavioral probe results to identify the server.
+#[cfg(feature = "fetch")]
 fn identify_from_probes(probes: &[ProbeResult]) -> Option<Technology> {
     let mut scores: std::collections::HashMap<&str, u32> = std::collections::HashMap::new();
 
@@ -272,6 +276,7 @@ mod tests {
     }
 
     /// `identify_from_probes` returns None when no probe matches any signature.
+    #[cfg(feature = "fetch")]
     #[test]
     fn identify_from_probes_no_match_returns_none() {
         let probes = vec![ProbeResult {
@@ -285,6 +290,7 @@ mod tests {
     }
 
     /// `identify_from_probes` recognises nginx by its 405 + body signature.
+    #[cfg(feature = "fetch")]
     #[test]
     fn identify_from_probes_nginx_signature() {
         let probes = vec![ProbeResult {

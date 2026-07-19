@@ -171,7 +171,7 @@ fn identify_from_probes(probes: &[ProbeResult]) -> Option<Technology> {
     }
 
     Some(Technology {
-        name: best.to_string(),
+        name: (*best).to_string(),
         version: None,
         category: TechCategory::Server,
         confidence,

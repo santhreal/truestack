@@ -346,7 +346,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                     .tag("information-disclosure")
                     .evidence(SecEvidence::HttpResponse {
                         status: 200,
-                        headers: vec![(header.to_string().into(), val_str.to_string().into())],
+                        headers: vec![((*header).to_string().into(), val_str.to_string().into())],
                         body_excerpt: None,
                     })
                     .build_or_log()

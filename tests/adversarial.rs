@@ -1,4 +1,4 @@
-use truestack::fingerprints::{detect, extract_version, Rule, RuleEngine, SignalDef};
+use truestack::fingerprints::{detect, extract_version};
 use truestack::postprocess::apply;
 use truestack::security_headers::audit;
 use truestack::{TechCategory, Technology};

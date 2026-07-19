@@ -1,6 +1,6 @@
-//! Favicon hash computation  -  Shodan-compatible MurmurHash3 x86/32.
+//! Favicon hash computation  -  Shodan-compatible `MurmurHash3` x86/32.
 //!
-//! Shodan indexes the hash of `base64(favicon_bytes)` using MurmurHash3.
+//! Shodan indexes the hash of `base64(favicon_bytes)` using `MurmurHash3`.
 //! Use the emitted hash to pivot on Shodan: `http.favicon.hash:{value}`.
 //!
 //! Reference: <https://github.com/pielco11/fav-up>
@@ -58,9 +58,10 @@ async fn limited_bytes(resp: reqwest::Response, max_bytes: usize) -> anyhow::Res
 /// Compute Shodan's favicon hash.
 ///
 /// 1. Base64-encode the raw bytes with line breaks every 76 characters.
-/// 2. MurmurHash3 x86/32 on the resulting base64 string (as bytes), seed = 0.
+/// 2. `MurmurHash3` x86/32 on the resulting base64 string (as bytes), seed = 0.
 pub fn shodan_favicon_hash(data: &[u8]) -> i32 {
-    murmurhash3_x86_32(shodan_base64_with_newlines(data).as_bytes(), 0) as i32
+    // Shodan publishes this hash as a signed 32-bit integer; reinterpret bits.
+    murmurhash3_x86_32(shodan_base64_with_newlines(data).as_bytes(), 0).cast_signed()
 }
 
 fn shodan_base64_with_newlines(data: &[u8]) -> String {
@@ -78,7 +79,7 @@ fn shodan_base64_with_newlines(data: &[u8]) -> String {
     formatted
 }
 
-/// MurmurHash3 x86/32  -  minimal faithful implementation, seed configurable.
+/// `MurmurHash3` x86/32  -  minimal faithful implementation, seed configurable.
 fn murmurhash3_x86_32(data: &[u8], seed: u32) -> u32 {
     const C1: u32 = 0xcc9e_2d51;
     const C2: u32 = 0x1b87_3593;
@@ -102,23 +103,24 @@ fn murmurhash3_x86_32(data: &[u8], seed: u32) -> u32 {
     let tail = &data[nblocks * 4..];
     let mut k1: u32 = 0;
     if tail.len() >= 3 {
-        k1 ^= (tail[2] as u32) << 16;
+        k1 ^= u32::from(tail[2]) << 16;
     }
     if tail.len() >= 2 {
-        k1 ^= (tail[1] as u32) << 8;
+        k1 ^= u32::from(tail[1]) << 8;
     }
     if !tail.is_empty() {
-        k1 ^= tail[0] as u32;
+        k1 ^= u32::from(tail[0]);
         k1 = k1.wrapping_mul(C1).rotate_left(15).wrapping_mul(C2);
         h1 ^= k1;
     }
 
-    h1 ^= len as u32;
+    // MurmurHash3 x86/32 defines length as u32; favicon bodies are << 4 GiB.
+    h1 ^= u32::try_from(len).unwrap_or(u32::MAX);
     h1 = fmix32(h1);
     h1
 }
 
-/// MurmurHash3 finalisation mix.
+/// `MurmurHash3` finalisation mix.
 fn fmix32(mut h: u32) -> u32 {
     h ^= h >> 16;
     h = h.wrapping_mul(0x85eb_ca6b);

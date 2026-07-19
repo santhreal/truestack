@@ -21,7 +21,7 @@ async fn test_full_fingerprint_pipeline() {
         .await;
 
     let client = reqwest::Client::new();
-    let resp = client.get(&server.uri()).send().await.unwrap();
+    let resp = client.get(server.uri()).send().await.unwrap();
 
     let headers: Vec<(String, String)> = resp
         .headers()
@@ -75,7 +75,7 @@ async fn test_csp_bypass_detection_integration() {
         .await;
 
     let client = reqwest::Client::new();
-    let resp = client.get(&server.uri()).send().await.unwrap();
+    let resp = client.get(server.uri()).send().await.unwrap();
 
     let headers: Vec<(String, String)> = resp
         .headers()

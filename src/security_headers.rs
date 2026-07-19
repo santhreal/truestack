@@ -167,6 +167,7 @@ const LEAKY_HEADERS: &[(&str, &str, &str)] = &[
 ///
 /// Returns a list of [`Finding`]s describing missing headers,
 /// CSP bypass opportunities, and information-leaking headers.
+#[allow(clippy::too_many_lines)] // Single linear audit: header checks, CSP analysis, leaky headers.
 pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
     let mut findings = Vec::new();
 
@@ -185,7 +186,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                     .build_or_log()
                 {
                     findings.push(f);
-                };
+                }
             }
             Some((_, val)) => {
                 let val_str = val.as_ref();
@@ -207,7 +208,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                             .build_or_log()
                         {
                             findings.push(f);
-                        };
+                        }
                     }
                 }
             }
@@ -248,7 +249,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                 .build_or_log()
             {
                 findings.push(f);
-            };
+            }
         }
 
         // unsafe-eval
@@ -266,7 +267,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                 .build_or_log()
             {
                 findings.push(f);
-            };
+            }
         }
 
         // Wildcard in script-src / default-src
@@ -290,7 +291,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                          CSP provides no meaningful XSS protection. Restrict to specific trusted origins.",
                     )
                     .tag("headers").tag("csp").tag("xss")
-                    .evidence(csp_evidence()).build_or_log() { findings.push(f); };
+                    .evidence(csp_evidence()).build_or_log() { findings.push(f); }
         }
 
         // Known CSP bypass domains
@@ -298,12 +299,11 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
             let match_domain = domain.trim_start_matches("*.");
             if contains_ignore_case(csp_str, match_domain) {
                 if let Some(f) = Finding::builder("truestack", "?", Severity::Medium)
-                    .title(format!("CSP bypass: {} in script-src", domain))
+                    .title(format!("CSP bypass: {domain} in script-src"))
                     .detail(format!(
-                        "CSP allows scripts from '{}'  -  {}. \
+                        "CSP allows scripts from '{domain}'  -  {reason}. \
                              Attackers can load malicious scripts from this trusted origin \
                              to bypass CSP-based XSS protections.",
-                        domain, reason
                     ))
                     .tag("headers")
                     .tag("csp")
@@ -312,7 +312,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                     .build_or_log()
                 {
                     findings.push(f);
-                };
+                }
                 break; // one bypass domain per CSP is enough
             }
         }
@@ -327,7 +327,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                          bypassing script-src restrictions. Add base-uri 'self'.",
                     )
                     .tag("headers").tag("csp")
-                    .evidence(csp_evidence()).build_or_log() { findings.push(f); };
+                    .evidence(csp_evidence()).build_or_log() { findings.push(f); }
         }
     }
 
@@ -352,7 +352,7 @@ pub fn audit<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Vec<Finding> {
                     .build_or_log()
                 {
                     findings.push(f);
-                };
+                }
             }
         }
     }

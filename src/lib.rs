@@ -32,7 +32,7 @@
 //!   response bodies, and cookies. Ship your own rules or use the embedded set.
 //! - **Security header auditing**  -  checks for HSTS, CSP, X-Frame-Options and
 //!   friends, including deep CSP bypass analysis (15 known bypass domains).
-//! - **Favicon hashing**  -  Shodan-compatible MurmurHash3 for cross-service
+//! - **Favicon hashing**  -  Shodan-compatible `MurmurHash3` for cross-service
 //!   pivot (`http.favicon.hash:{value}`).
 //! - **Version extraction**  -  parses `Server`, `X-Powered-By`, and other
 //!   headers to extract semver-style version strings.
@@ -86,6 +86,7 @@ pub mod html;
 pub mod implied;
 pub mod postprocess;
 pub mod security_headers;
+/// Shared technology and finding types.
 pub mod types;
 pub mod version_intel;
 pub mod waf;

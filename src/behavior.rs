@@ -50,7 +50,7 @@ pub struct ProbeResult {
 }
 
 /// Known behavioral signatures.
-/// (probe_name, status_code, body_contains, content_type_contains) → server
+/// (`probe_name`, `status_code`, `body_contains`, `content_type_contains`) → server
 const SIGNATURES: &[(&str, u16, &str, &str, &str)] = &[
     // nginx returns 405 for invalid methods with "Not Allowed" in a minimal HTML page
     ("invalid_method", 405, "<center>nginx", "", "nginx"),
@@ -106,7 +106,7 @@ pub async fn identify(
                     .headers()
                     .get("content-type")
                     .and_then(|v| v.to_str().ok())
-                    .map(|s| s.to_string());
+                    .map(str::to_string);
                 let body = resp.text().await.unwrap_or_default();
                 let body_prefix = body.chars().take(512).collect();
                 probes_results.push(ProbeResult {
@@ -160,8 +160,11 @@ fn identify_from_probes(probes: &[ProbeResult]) -> Option<Technology> {
     }
 
     let (best, &count) = scores.iter().max_by_key(|(_, &v)| v)?;
-    let total_probes = probes.len() as u32;
-    let confidence = ((count as f64 / total_probes.max(1) as f64) * 100.0).min(100.0) as u8;
+    let total_probes = u32::try_from(probes.len()).unwrap_or(u32::MAX);
+    let ratio = f64::from(count) / f64::from(total_probes.max(1));
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    // ratio in [0,1] → pct in [0,100]
+    let confidence = (ratio * 100.0).min(100.0) as u8;
 
     if confidence < 30 {
         return None;
@@ -175,22 +178,23 @@ fn identify_from_probes(probes: &[ProbeResult]) -> Option<Technology> {
     })
 }
 
+/// Spec for a single behavioral probe: name, method, URL, extra headers.
+pub type ProbeSpec = (
+    &'static str,
+    &'static str,
+    String,
+    Vec<(&'static str, &'static str)>,
+);
+
 /// Generate the malformed request probes.
 ///
-/// Returns (probe_name, method, path, headers) tuples.
+/// Returns (`probe_name`, method, path, headers) tuples.
 /// The caller is responsible for actually sending the requests.
 ///
 /// `base_url` is silently truncated to [`MAX_BASE_URL_LEN`] bytes before any
 /// string construction to prevent a caller-controlled URL from causing a
 /// multi-megabyte allocation in probe 2 (the overlong-URI probe).
-pub fn probes(
-    base_url: &str,
-) -> Vec<(
-    &'static str,
-    &'static str,
-    String,
-    Vec<(&'static str, &'static str)>,
-)> {
+pub fn probes(base_url: &str) -> Vec<ProbeSpec> {
     // Clamp base_url at a char boundary so the truncation cannot split a
     // multibyte codepoint.  MAX_BASE_URL_LEN is well below any realistic URL
     // size; any URL larger than this is either pathological or adversarial.
@@ -200,12 +204,11 @@ pub fn probes(
             .map(|(i, _)| i)
             .take_while(|&i| i < MAX_BASE_URL_LEN)
             .last()
-            .map(|i| {
+            .map_or(0, |i| {
                 // advance past the last char
                 let next = base_url[i..].chars().next().map_or(0, char::len_utf8);
                 i + next
-            })
-            .unwrap_or(0);
+            });
         &base_url[..limit]
     };
 
@@ -230,7 +233,7 @@ mod tests {
 
     /// Oversized `base_url` must not cause a multi-megabyte overlong-URI allocation.
     /// The total size of probe 2's URL must be bounded even when the caller passes
-    /// an adversarially large base_url.
+    /// an adversarially large `base_url`.
     #[test]
     fn probes_clamp_oversized_base_url() {
         let huge_url = "https://example.com/".to_string() + &"A".repeat(1_000_000);
@@ -250,7 +253,7 @@ mod tests {
         }
     }
 
-    /// A normal-sized base_url must pass through unchanged.
+    /// A normal-sized `base_url` must pass through unchanged.
     #[test]
     fn probes_normal_url_unmodified() {
         let url = "https://example.com";
@@ -261,14 +264,14 @@ mod tests {
         assert_eq!(invalid_method_probe.unwrap().2, url);
     }
 
-    /// Empty base_url produces valid probe URLs.
+    /// Empty `base_url` produces valid probe URLs.
     #[test]
     fn probes_empty_base_url() {
         let probes = probes("");
         assert_eq!(probes.len(), 3, "should always produce 3 probes");
     }
 
-    /// identify_from_probes returns None when no probe matches any signature.
+    /// `identify_from_probes` returns None when no probe matches any signature.
     #[test]
     fn identify_from_probes_no_match_returns_none() {
         let probes = vec![ProbeResult {
@@ -281,7 +284,7 @@ mod tests {
         assert!(identify_from_probes(&probes).is_none());
     }
 
-    /// identify_from_probes recognises nginx by its 405 + body signature.
+    /// `identify_from_probes` recognises nginx by its 405 + body signature.
     #[test]
     fn identify_from_probes_nginx_signature() {
         let probes = vec![ProbeResult {

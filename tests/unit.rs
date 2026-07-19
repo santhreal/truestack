@@ -3,7 +3,7 @@
 //! These tests exercise each public API in isolation, covering
 //! normal paths, edge cases, and boundary conditions.
 
-use truestack::fingerprints::{detect, extract_version, Rule, RuleEngine, SignalDef};
+use truestack::fingerprints::{detect, extract_version, Rule, RuleEngine};
 use truestack::html::extract_title;
 use truestack::implied::expand;
 use truestack::postprocess::{apply, is_spa_catch_all};

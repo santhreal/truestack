@@ -29,13 +29,17 @@ pub fn detect(status: u16, headers: &[(String, String)], body: &[u8]) -> Option<
     // explicitly rather than silently losing the anomaly.
     let raw = detected.confidence * 100.0;
     let confidence = if raw.is_finite() {
-        raw.round().clamp(0.0, 100.0) as u8
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        // finite + clamped to [0.0, 100.0]
+        {
+            raw.round().clamp(0.0, 100.0) as u8
+        }
     } else {
         0u8
     };
 
     Some(Technology {
-        name: detected.name.to_string(),
+        name: detected.name.clone(),
         version: None,
         category: TechCategory::Security,
         confidence,
@@ -85,7 +89,7 @@ mod tests {
 
     /// Verify the confidence clamp logic in isolation.
     ///
-    /// The production path calls wafrift_detect which we can't control here,
+    /// The production path calls `wafrift_detect` which we can't control here,
     /// but we can exercise the arithmetic directly to confirm the guard works
     /// for boundary values including the NaN case.
     #[test]
@@ -93,7 +97,11 @@ mod tests {
         // Test the clamp formula mirrors what detect() uses.
         let clamp = |raw: f64| -> u8 {
             if raw.is_finite() {
-                raw.round().clamp(0.0, 100.0) as u8
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                // finite + clamped to [0.0, 100.0]
+                {
+                    raw.round().clamp(0.0, 100.0) as u8
+                }
             } else {
                 0u8
             }

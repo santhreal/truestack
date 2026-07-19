@@ -4,7 +4,7 @@
 //! test files: version_intel assessments, implied-chain chaining, waf
 //! integration, and boundary conditions on the rule engine.
 
-use truestack::fingerprints::{detect, detect_with_engine, Rule, RuleEngine, SignalDef};
+use truestack::fingerprints::{detect_with_engine, Rule, RuleEngine, SignalDef};
 use truestack::implied::expand;
 use truestack::postprocess::apply;
 use truestack::security_headers::audit;

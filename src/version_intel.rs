@@ -42,11 +42,11 @@ pub enum Distro {
     Ubuntu,
     /// Red Hat Enterprise Linux  -  backports for 10+ year lifecycle.
     Rhel,
-    /// CentOS / CentOS Stream  -  RHEL-derived, same backporting.
+    /// `CentOS` / `CentOS` Stream  -  RHEL-derived, same backporting.
     CentOs,
     /// Rocky Linux  -  RHEL-compatible, same backporting.
     Rocky,
-    /// AlmaLinux  -  RHEL-compatible, same backporting.
+    /// `AlmaLinux`  -  RHEL-compatible, same backporting.
     Alma,
     /// Amazon Linux  -  AWS's RHEL-derived distro, backports aggressively.
     AmazonLinux,
@@ -172,17 +172,14 @@ pub fn assess_headers<K: AsRef<str>, V: AsRef<str>>(
                     reliability: VersionReliability::NoVersion,
                     advisory: "no version extracted  -  cannot assess".to_string(),
                 },
-                Some(ver) => assess_single(&tech.name, ver, &os),
+                Some(ver) => assess_single(&tech.name, ver, os.as_ref()),
             }
         })
         .collect()
 }
 
 /// Mutate `technologies` in place with backport-aware confidence scoring.
-pub fn assess<K: AsRef<str>, V: AsRef<str>>(
-    technologies: &mut Vec<Technology>,
-    headers: &[(K, V)],
-) {
+pub fn assess<K: AsRef<str>, V: AsRef<str>>(technologies: &mut [Technology], headers: &[(K, V)]) {
     let assessments = assess_headers(technologies, headers);
     for tech in technologies.iter_mut() {
         if let Some(a) = assessments.iter().find(|a| a.technology == tech.name) {
@@ -229,7 +226,7 @@ pub fn detect_os<K: AsRef<str>, V: AsRef<str>>(headers: &[(K, V)]) -> Option<OsC
 }
 
 /// Assess a single technology+version pair against OS context.
-fn assess_single(tech_name: &str, version: &str, os: &Option<OsContext>) -> VersionAssessment {
+fn assess_single(tech_name: &str, version: &str, os: Option<&OsContext>) -> VersionAssessment {
     let (backport_likely, reliability, advisory) = match os {
         Some(ctx) if ctx.distro.backports_patches() => {
             let distro_name = format!("{:?}", ctx.distro);
@@ -307,7 +304,7 @@ fn assess_single(tech_name: &str, version: &str, os: &Option<OsContext>) -> Vers
     VersionAssessment {
         technology: tech_name.to_string(),
         reported_version: Some(version.to_string()),
-        os_context: os.clone(),
+        os_context: os.cloned(),
         backport_likely,
         reliability,
         advisory,
@@ -392,7 +389,7 @@ fn parse_os_from_version_suffix(value: &str) -> Option<OsContext> {
     if lower.contains(".el") {
         let version_hint = lower.find(".el").and_then(|i| {
             let rest = &lower[i + 3..];
-            let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+            let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
             if digits.is_empty() {
                 None
             } else {
@@ -475,7 +472,7 @@ fn extract_deb_version(lower: &str) -> Option<String> {
     // Find "deb" followed by digits
     if let Some(idx) = lower.find("deb") {
         let rest = &lower[idx + 3..];
-        let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+        let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
         if !digits.is_empty() {
             return Some(format!("Debian {digits}"));
         }

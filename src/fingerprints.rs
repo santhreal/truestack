@@ -6,7 +6,6 @@
 //! header/body data so callers can supply their own transport.
 
 use crate::{TechCategory, Technology};
-use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 /// A single detection rule loaded from the YAML rule file.
@@ -31,7 +30,7 @@ pub struct Rule {
     #[serde(default)]
     pub excludes: Vec<String>,
     /// Technologies that MUST also be detected for this rule to fire.
-    /// Example: "WordPress SEO Plugin" requires "WordPress" to be present.
+    /// Example: "`WordPress` SEO Plugin" requires "`WordPress`" to be present.
     #[serde(default)]
     pub requires: Vec<String>,
     /// Minimum number of signals that must match for this rule to fire.
@@ -51,24 +50,37 @@ fn default_min_signals() -> usize {
 pub enum SignalDef {
     /// Match an HTTP response header key/value pair.
     #[serde(rename = "header")]
-    Header { key: String, value: String },
+    Header {
+        /// Header name to match (case-insensitive).
+        key: String,
+        /// Expected substring in the header value.
+        value: String,
+    },
     /// Match a substring in the response body.
     #[serde(rename = "body")]
-    Body { value: String },
+    Body {
+        /// Expected substring in the response body.
+        value: String,
+    },
     /// Match a substring in a `Set-Cookie` header.
     #[serde(rename = "cookie")]
-    Cookie { value: String },
+    Cookie {
+        /// Expected substring in a `Set-Cookie` header value.
+        value: String,
+    },
     /// Match a Shodan-compatible favicon hash.
     #[serde(rename = "favicon")]
-    Favicon { hash: i32 },
+    Favicon {
+        /// Shodan-compatible favicon hash to match.
+        hash: i32,
+    },
 }
 
 /// Confidence weight for a matched signal source.
 fn signal_confidence(sig: &SignalDef) -> u8 {
     match sig {
         SignalDef::Header { .. } => 95,
-        SignalDef::Cookie { .. } => 90,
-        SignalDef::Favicon { .. } => 90,
+        SignalDef::Cookie { .. } | SignalDef::Favicon { .. } => 90,
         SignalDef::Body { .. } => 70,
     }
 }
@@ -80,15 +92,19 @@ fn aggregate_confidence(matched: &[&SignalDef]) -> u8 {
         .map(|s| signal_confidence(s))
         .max()
         .unwrap_or(80);
-    let extra = matched.len().saturating_sub(1) as u8;
+    // matched.len() is tiny (rule signal counts); saturating cast is domain-safe.
+    let extra = u8::try_from(matched.len().saturating_sub(1)).unwrap_or(u8::MAX);
     base.saturating_add(5u8.saturating_mul(extra)).min(100)
 }
 
 /// A technology fingerprinting engine.
 #[derive(Debug, Clone)]
 pub struct RuleEngine {
+    /// Compiled detection rules.
     pub rules: Vec<Rule>,
+    /// Aho-Corasick automaton over body signal patterns.
     pub body_ac: std::sync::Arc<aho_corasick::AhoCorasick>,
+    /// Body patterns corresponding to [`Self::body_ac`] pattern indices.
     pub body_patterns: std::sync::Arc<Vec<String>>,
 }
 
@@ -98,14 +114,21 @@ struct RawRuleEngine {
 }
 
 impl RuleEngine {
-    /// Parse a RuleEngine from a TOML string.
+    /// Parse a `RuleEngine` from a TOML string.
     pub fn from_toml(s: &str) -> anyhow::Result<Self> {
         let raw: RawRuleEngine =
             toml::from_str(s).map_err(|e| anyhow::anyhow!("Failed to parse rules TOML: {e}"))?;
         Ok(Self::compile(raw.rules))
     }
 
-    /// Compile a rule engine from a list of rules
+    /// Compile a rule engine from a list of rules.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the body-pattern Aho-Corasick automaton cannot be built from
+    /// the loaded rule data. An empty matcher would silently drop every body
+    /// fingerprint, so this fails closed instead.
+    #[allow(clippy::panic)] // Fail-closed: empty matcher would silently drop body fingerprints.
     pub fn compile(rules: Vec<Rule>) -> Self {
         let mut body_patterns = std::collections::HashSet::new();
         for rule in &rules {
@@ -174,11 +197,11 @@ impl RuleEngine {
     }
 }
 
-#[allow(clippy::panic)]
-static ENGINE: Lazy<RuleEngine> = Lazy::new(|| {
+#[allow(clippy::panic)] // Embedded rules.toml is compile-time fixture data; parse failure is a build bug.
+static ENGINE: std::sync::LazyLock<RuleEngine> = std::sync::LazyLock::new(|| {
     let toml = include_str!("rules.toml");
     RuleEngine::from_toml(toml)
-        .unwrap_or_else(|e| panic!("failed to parse embedded rules.toml: {}", e))
+        .unwrap_or_else(|e| panic!("failed to parse embedded rules.toml: {e}"))
 });
 
 /// Detect technologies from raw HTTP response data using the default engine.
@@ -317,12 +340,7 @@ pub fn extract_version(header_val: &str, tech_name: &str) -> Option<String> {
     // 2. Fallback to extracting the first valid version string
     header_val
         .split_whitespace()
-        .find(|t| {
-            t.chars()
-                .next()
-                .map(|c| c.is_ascii_digit())
-                .unwrap_or(false)
-        })
+        .find(|t| t.chars().next().is_some_and(|c| c.is_ascii_digit()))
         .or_else(|| {
             header_val
                 .split('/')

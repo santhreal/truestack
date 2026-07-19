@@ -17,7 +17,7 @@ pub struct Technology {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TechCategory {
-    /// Content management system (WordPress, Drupal, …).
+    /// Content management system (`WordPress`, Drupal, …).
     Cms,
     /// Web framework (Next.js, Laravel, Spring, …).
     Framework,

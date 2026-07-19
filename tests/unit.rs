@@ -78,7 +78,7 @@ fn tech_category_serde_roundtrip() {
     for cat in &cats {
         let json = serde_json::to_string(cat).expect("serialize TechCategory");
         let back: TechCategory = serde_json::from_str(&json).expect("deserialize TechCategory");
-        assert_eq!(cat, &back, "roundtrip failed for {:?}", cat);
+        assert_eq!(cat, &back, "roundtrip failed for {cat:?}");
     }
 }
 

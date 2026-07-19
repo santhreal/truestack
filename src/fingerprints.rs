@@ -430,8 +430,12 @@ mod tests {
         );
 
         let no_headers: Vec<(String, String)> = Vec::new();
-        let techs =
-            detect_with_engine(&no_headers, "page has a unique-body-marker inside", None, &engine);
+        let techs = detect_with_engine(
+            &no_headers,
+            "page has a unique-body-marker inside",
+            None,
+            &engine,
+        );
         assert_eq!(techs.len(), 1);
         assert_eq!(techs[0].name, "MarkerTech");
     }
